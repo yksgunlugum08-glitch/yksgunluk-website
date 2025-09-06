@@ -1,0 +1,44 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # Manuel tetikleme için
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout kod
+      uses: actions/checkout@v4
+    
+    - name: Flutter kurulumu
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+    
+    - name: Dependencies yükle
+      run: |
+        flutter doctor
+        flutter pub get
+    
+    - name: iOS Build (imzasız - test için)
+      run: |
+        flutter build ios --release --no-codesign
+    
+    - name: IPA oluştur (basit yöntem)
+      run: |
+        cd build/ios/iphoneos
+        mkdir -p Payload
+        cp -r Runner.app Payload/
+        zip -r unsigned-app.ipa Payload/
+        ls -la
+    
+    - name: IPA dosyasını yükle
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-ipa-unsigned
+        path: build/ios/iphoneos/unsigned-app.ipa
+        retention-days: 30
