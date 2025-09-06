@@ -1,0 +1,157 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+apply plugin: 'com.android.application'
+// START: FlutterFire Configuration
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.firebase.crashlytics'
+// END: FlutterFire Configuration
+apply plugin: 'kotlin-android'
+apply plugin: 'dev.flutter.flutter-gradle-plugin'
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace "com.mkagca.yksgunluk"
+    compileSdkVersion flutter.compileSdkVersion
+    ndkVersion "27.0.12077973"
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    defaultConfig {
+        applicationId "com.mkagca.yksgunluk"
+        minSdkVersion 23
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+        multiDexEnabled true
+        
+        // Debug symbols için sadece bu satır:
+        ndk {
+            debugSymbolLevel 'FULL'
+        }
+    }
+    
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+    
+    buildTypes {
+        debug {
+            minifyEnabled false
+            shrinkResources false
+        }
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            
+            // Sadece bu satırları ekleyin:
+            debuggable false
+        }
+    }
+    
+    // Bu kısmı kaldırdık - eski AGP desteklemiyor:
+    // bundle {
+    //     debugSymbols {
+    //         include '**/lib/**/*.so'
+    //     }
+    // }
+    
+    // Packaging options - bu kısmı saklayın:
+    packagingOptions {
+        doNotStrip '**/arm64-v8a/*.so'
+        doNotStrip '**/armeabi-v7a/*.so'
+        doNotStrip '**/x86/*.so'
+        doNotStrip '**/x86_64/*.so'
+    }
+    
+    splits {
+        abi {
+            enable false
+            reset()
+            include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+            universalApk true
+        }
+    }
+}
+
+dependencies {
+    def kotlin_version = '2.1.0'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    
+    // Google Play Core - Flutter için gerekli modüller (güncel sürümler)
+    implementation 'com.google.android.play:app-update:2.1.0'
+    implementation 'com.google.android.play:review:2.0.1'
+    implementation 'com.google.android.play:feature-delivery:2.1.0'
+    implementation 'com.google.android.play:core-common:2.0.3'
+    
+    // Tasks API - DOĞRU kütüphane (Google Play Services)
+    implementation 'com.google.android.gms:play-services-tasks:18.2.0'
+    
+    // In-app satın alma için
+    implementation 'com.android.billingclient:billing:7.1.1'
+    
+    // Desugaring kütüphanesi
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    
+    // MultiDex desteği
+    implementation 'androidx.multidex:multidex:2.0.1'
+    
+    // Firebase için temel bağımlılıklar
+    implementation platform('com.google.firebase:firebase-bom:33.4.0')
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.firebase:firebase-crashlytics'
+    implementation 'com.google.firebase:firebase-config'
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-firestore'
+    
+    // Google Play Services
+    implementation 'com.google.android.gms:play-services-auth:21.2.0'
+
+    // AndroidX kütüphaneleri
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.activity:activity-ktx:1.9.2'
+    implementation 'androidx.fragment:fragment-ktx:1.8.4'
+    
+    // Kotlin conflict çözümü
+    configurations.all {
+        resolutionStrategy {
+            force "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+            force "org.jetbrains.kotlin:kotlin-stdlib-common:$kotlin_version"
+            force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+            force "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+            
+            force 'androidx.core:core-ktx:1.13.1'
+            force 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.6'
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
